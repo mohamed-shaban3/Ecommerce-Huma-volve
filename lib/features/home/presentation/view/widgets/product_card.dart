@@ -1,10 +1,10 @@
+import 'package:ecommerce_app_huma_volve/features/home/domain/entites/home_product_entity.dart';
 import 'package:flutter/material.dart';
-import '../../services/models/product_model.dart';
-import '../../../../core/theme.dart';
-import '../../../details/screens/product_details_screen.dart';
+import '../../../../../core/theme.dart';
+import '../../../../details/screens/product_details_screen.dart';
 
 class ProductCard extends StatelessWidget {
-  final ProductModel product;
+  final HomeProductEntity product;
   const ProductCard({super.key, required this.product});
 
   @override
