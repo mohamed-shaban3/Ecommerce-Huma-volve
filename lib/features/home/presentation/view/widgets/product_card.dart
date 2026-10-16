@@ -51,10 +51,24 @@ class ProductCard extends StatelessWidget {
                         top: Radius.circular(24),
                       ),
                       child: Image.network(
-                        product.images?[0] ?? '',
+                        (product.images != null && product.images!.isNotEmpty)
+                            ? product.images![0]
+                            : '',
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade100,
+                            child: Center(
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Colors.grey.shade400,
+                                size: 40,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),

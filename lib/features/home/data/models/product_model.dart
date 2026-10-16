@@ -16,17 +16,26 @@ class HomeProductModel extends HomeProductEntity {
 
       });
 
-  HomeProductModel.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    title = json['title'];
-    slug = json['slug'];
-    price = json['price'];
-    description = json['description'];
-    category = json['category'] != null
+HomeProductModel.fromJson(Map<String, dynamic> json) {
+    id = json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0;
+    title = json['title']?.toString() ?? '';
+    slug = json['slug']?.toString() ?? '';
+    price = json['price'] is int 
+        ? json['price'] 
+        : (json['price'] as num?)?.toInt() ?? 0;
+    description = json['description']?.toString() ?? '';
+    
+    category = json['category'] != null && json['category'] is Map<String, dynamic>
         ? HomeCategoryModel.fromJson(json['category'])
         : null;
-    images = json['images'].cast<String>();
-
+        
+    if (json['images'] != null && json['images'] is List) {
+      images = List<String>.from(json['images'].map((x) => x?.toString() ?? ''));
+    } else if (json['images'] != null && json['images'] is String) {
+      images = [json['images']];
+    } else {
+      images = [];
+    }
   }
 
 }

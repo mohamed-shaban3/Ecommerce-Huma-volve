@@ -2,7 +2,6 @@ import 'package:ecommerce_app_huma_volve/features/home/presentation/view_model/c
 import 'package:ecommerce_app_huma_volve/features/home/presentation/view_model/cubit/home_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../core/dummy_data.dart';
 import '../../../../core/theme.dart';
 import 'widgets/product_card.dart';
@@ -17,11 +16,25 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategoryIndex = 0;
+  late final ScrollController scrollController;
 
   @override
   void initState() {
+     super.initState();
+    scrollController = ScrollController();
+    scrollController.addListener(_onListener);
+
     context.read<HomeCubit>().loadHomeData();
-    super.initState();
+   
+  }
+
+  void _onListener() {
+    final pixel = scrollController.position.pixels;
+    final maxScroll = scrollController.position.maxScrollExtent;
+    int triggerDistance = 200;
+    if (pixel >= maxScroll - triggerDistance) {
+      context.read<HomeCubit>().loadMoreProducts();
+    }
   }
 
   @override
@@ -30,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppTheme.background,
       body: SafeArea(
         child: CustomScrollView(
+          controller: scrollController,
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -121,52 +135,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 32),
                     BlocBuilder<HomeCubit, HomeStates>(
                       buildWhen: (previous, current) {
-                        if (current is CategoryLoadingState ||
+                        return current is CategoryLoadingState ||
                             current is CategoryErrorState ||
-                            current is CategorySuccessState) {
-                          return true;
-                        }
-                        return false;
+                            current is CategorySuccessState;
                       },
-                      builder: (BuildContext context, state) {
+                      builder: (context, state) {
                         if (state is CategoryLoadingState) {
                           return const Center(
                             child: CircularProgressIndicator(),
                           );
                         } else if (state is CategoryErrorState) {
                           return Center(child: Text(state.errorMessage));
-                        } else if (state is CategorySuccessState) {
-                          final categories = state.categories;
-                          return SizedBox(
-                            height: 44,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: categories.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(width: 12),
-                              itemBuilder: (context, index) {
-                                return CategoryChip(
-                                  label: categories[index].name ?? '',
-                                  isSelected: _selectedCategoryIndex == index,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategoryIndex = index;
-                                    });
-                                    context
-                                        .read<HomeCubit>()
-                                        .getProductsByCategory(
-                                          categories[index].id!,
-                                        );
-                                  },
-                                );
-                              },
-                            ),
-                          );
-                        } else {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
                         }
+
+                        final categories = context.read<HomeCubit>().categories;
+                        if (categories.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return SizedBox(
+                          height: 44,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: categories.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, index) {
+                              return CategoryChip(
+                                label: categories[index].name ?? '',
+                                isSelected: _selectedCategoryIndex == index,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCategoryIndex = index;
+                                  });
+                                  context
+                                      .read<HomeCubit>()
+                                      .getProductsByCategoryId(
+                                        categories[index].id!,
+                                      );
+                                },
+                              );
+                            },
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -177,9 +188,9 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               sliver: BlocBuilder<HomeCubit, HomeStates>(
                 buildWhen: (previous, current) {
-                  return current is ProductLoadingState ||
+                  return (current is ProductLoadingState ||
                       current is ProductSuccessState ||
-                      current is ProductErrorState;
+                      current is ProductErrorState);
                 },
                 builder: (context, state) {
                   if (state is ProductLoadingState) {
@@ -192,6 +203,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   } else if (state is ProductSuccessState) {
                     final products = state.products;
+                    if (products.isEmpty) {
+                      return const SliverToBoxAdapter(
+                        child: Center(child: Text('No products found')),
+                      );
+                    }
                     return SliverGrid(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
@@ -205,13 +221,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       }, childCount: products.length),
                     );
                   }
-                  return const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
+                  return const SliverToBoxAdapter(child: SizedBox.shrink());
                 },
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(
+              child: BlocBuilder<HomeCubit, HomeStates>(
+                buildWhen: (previous, current) {
+                  return current is ProductLoadingMoreState ||
+                      current is ProductLoadingMoreErrorState ||
+                      current is ProductSuccessState;
+                },
+                builder: (context, state) {
+                  if (state is ProductLoadingMoreState) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
           ],
         ),
       ),

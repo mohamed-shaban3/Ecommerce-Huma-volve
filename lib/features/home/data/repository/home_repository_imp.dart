@@ -14,20 +14,29 @@ class HomeRepositoryImp implements HomeRepository {
   Future<Either<Failure, List<HomeCategoryEntity>>> getCategories() async {
     try {
       final categories = await homeRemoteDataSource.getCategories();
-      return Right(categories as List<HomeCategoryEntity>);
+      return Right(categories.cast<HomeCategoryEntity>());
     } catch (e) {
       return Left(ErrorHandler.handle(e) as Failure);
     }
   }
 
-  @override
+@override
   Future<Either<Failure, List<HomeProductEntity>>> getProducts(
-    int? categoryId,
-  ) async {
+    int? categoryId, {
+    required int limit,
+    required int offset,
+  }) async {
     try {
-      final products = await homeRemoteDataSource.getProducts(categoryId);
-      return Right(products as List<HomeProductEntity>);
-    } catch (e) {
+      final products = await homeRemoteDataSource.getProducts(
+        categoryId,
+        limit: limit,
+        offset: offset,
+      );
+      return Right(products.cast<HomeProductEntity>());
+    } catch (e, stackTrace) {
+      print("===== GET PRODUCTS ERROR =====");
+      print(e);
+      print(stackTrace);
       return Left(ErrorHandler.handle(e) as Failure);
     }
   }
